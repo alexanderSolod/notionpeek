@@ -1,38 +1,74 @@
-# NotionPeek Backend
+# NotionPeek
 
-Cloudflare Worker API and React frontend for looking up collaborator profiles behind public Notion pages.
+See who's behind any public Notion page.
 
-## Frontend
+Paste a link, get every collaborator's name, email, role, and company. No login, no API key. It's the same data Notion's public page endpoint already returns to your browser — NotionPeek just pulls it out and makes it readable.
 
-The usable website is a Vite React app under `src/ui/`. It is built into `dist/` and served by the Worker through the Cloudflare Assets binding. The frontend calls the backend through same-origin `POST /api/lookup`.
+- **Live:** [notionpeek.com](https://notionpeek.com)
+- **Repo:** [github.com/alexanderSolod/notionpeek](https://github.com/alexanderSolod/notionpeek)
 
-The bottom "Add this functionality to your agent" section downloads `/notion_peek.md`. During `npm run frontend:build`, `scripts/sync-skills-file.mjs` copies a root `notion_peek.md` into `public/notion_peek.md` when present.
+## Why
 
-Run the combined frontend and Worker locally:
+Public Notion pages (hiring pages, open roadmaps, team wikis, docs) ship a payload that includes the real people attached to them. Most of the time you never see any of it — the page UI only shows what the owner wanted you to see.
+
+Handy when:
+
+- You're job hunting and want the hiring manager's actual name, not a `careers@` inbox.
+- You want to know who owns a public doc before you reach out.
+- You want a CSV of contacts tied to a specific page or workspace.
+
+## How it works
+
+1. A Cloudflare Worker pulls the page ID out of the URL and hits Notion's own public page endpoint.
+2. The response is normalized into a collaborator list with inferred signals: work email vs personal, a priority rank, and pre-built Google search queries for LinkedIn and hiring context.
+3. The frontend shows the list, lets you copy emails, export CSV, or one-click into LinkedIn / hiring searches.
+4. Private pages return nothing — the public endpoint simply doesn't include collaborator data for them.
+
+Nothing is stored. Cached lookups (when KV is bound) live for an hour and only cache the normalized response, not anything else.
+
+## Agent skill
+
+Hit the "Download skill.md" button on the site to grab a markdown skill file. Drop it into Claude Code, Cursor, or any agent that reads markdown skills, and the agent can run the same lookup itself.
+
+## Local development
 
 ```bash
-npm run dev -- --port 8787
+npm install
+npm run frontend:dev       # Vite dev server with HMR (http://127.0.0.1:5173)
+npm run dev                # Worker + built frontend on a single origin
+npm test                   # Vitest suite
+npm run typecheck          # tsc --noEmit
 ```
 
-For frontend-only development, start the Worker separately and run:
+The Vite dev server proxies `/api` to `http://127.0.0.1:8787`, so you can run `wrangler dev` in one terminal and `npm run frontend:dev` in another for the tightest loop.
+
+## Deploying
 
 ```bash
-npm run frontend:dev
+npm run deploy
 ```
 
-The Vite dev server proxies `/api` to `http://127.0.0.1:8787`.
+Runs typecheck, Vite build, then `wrangler deploy`. Before the first deploy:
 
-## Endpoints
+- `wrangler login`
+- (Optional) Create KV namespaces for caching and rate-limiting, wire them into `wrangler.toml`:
+
+  ```bash
+  wrangler kv namespace create CACHE
+  wrangler kv namespace create RATE_LIMIT
+  ```
+
+- Set `ALLOWED_ORIGINS` in `wrangler.toml` to the domain you're serving from.
+
+## API
 
 ### `POST /api/lookup`
 
 ```json
-{
-  "url": "https://www.notion.so/workspace/Page-Title-04f306fbf59a413fae15f42e2a1ab029"
-}
+{ "url": "https://www.notion.so/workspace/Page-Title-04f306fb..." }
 ```
 
-Response:
+Returns:
 
 ```json
 {
@@ -60,74 +96,17 @@ Response:
 }
 ```
 
-`GET /api/lookup?url=...` is also available for local debugging.
+Error codes: `invalid_url`, `missing_url`, `private_or_missing`, `no_collaborators`, `rate_limited`, `forbidden`.
 
-## Error Responses
-
-```json
-{
-  "error": {
-    "code": "invalid_url",
-    "message": "That doesn't look like a Notion link."
-  }
-}
-```
-
-Main codes:
-
-- `invalid_url`
-- `missing_url`
-- `private_or_missing`
-- `no_collaborators`
-- `rate_limited`
-- `forbidden`
-
-## Job Targeting Fields
-
-The backend adds lightweight, free enrichment:
-
-- `company` and `companyDomain` from work email domains.
-- `isWorkEmail` to separate company contacts from personal addresses.
-- `jobSignals.contactPriority`, sorted high to low.
-- Ready-to-use `linkedinQuery` and `hiringQuery` strings for optional frontend enrichment.
-
-No web search or paid enrichment is performed in v1.
-
-## Cloudflare Setup
-
-Run locally:
-
-```bash
-npm install
-npm run dev
-```
-
-Optional KV bindings:
-
-```bash
-wrangler kv namespace create CACHE
-wrangler kv namespace create RATE_LIMIT
-```
-
-Then add the generated IDs to `wrangler.toml`.
-
-Environment variables:
-
-- `ALLOWED_ORIGINS`: comma-separated frontend origins, for example `https://notionpeek.example.com,http://localhost:3000`.
-- `ALLOW_LOCAL_ORIGINS`: set to `true` only if the deployed API should accept browser requests from localhost origins. Local `wrangler dev` requests allow localhost automatically.
-- `REQUIRE_APP_REFERER`: defaults to referer/origin protection. Set to `false` only for private testing.
-
-Deploy:
-
-```bash
-npm run deploy
-```
-
-`npm run deploy` runs TypeScript checks and a Vite production build before publishing.
+`GET /api/lookup?url=...` also works and is useful for local debugging.
 
 ## Limits
 
-- Cache TTL: 1 hour when `CACHE` is bound.
-- Rate limit: 10 lookups per minute and 50 per hour per IP when `RATE_LIMIT` or `CACHE` is bound.
-- Requests without a valid app `Origin` or `Referer` are rejected unless `REQUIRE_APP_REFERER=false`.
-- Lookup request bodies are capped at 4 KB.
+- Cache TTL: 1 hour (when `CACHE` is bound).
+- Rate limit: 10 lookups / minute and 50 / hour per IP (when `RATE_LIMIT` or `CACHE` is bound).
+- Requests without a valid app `Origin` / `Referer` are rejected unless `REQUIRE_APP_REFERER=false`.
+- Request bodies capped at 4 KB.
+
+## Credits
+
+Inspired by [this tweet from @weezerOSINT](https://x.com/weezerOSINT/status/2045849358462222720). Built by [gpt.alex](https://x.com/gpt_alex).
