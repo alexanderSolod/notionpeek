@@ -1,0 +1,30 @@
+{
+  "name": "notionpeek",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run frontend:build && wrangler dev",
+    "worker:dev": "wrangler dev",
+    "frontend:dev": "vite",
+    "frontend:build": "node scripts/sync-skills-file.mjs && vite build",
+    "build": "npm run typecheck && npm run frontend:build",
+    "deploy": "npm run build && wrangler deploy",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260418.1",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.2.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.2",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.14.4"
+  },
+  "dependencies": {
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  }
+}

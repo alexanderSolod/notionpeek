@@ -1,0 +1,22 @@
+name = "notionpeek"
+main = "src/index.ts"
+compatibility_date = "2026-04-19"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# Add these bindings after creating KV namespaces:
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "<cache-kv-namespace-id>"
+#
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT"
+# id = "<rate-limit-kv-namespace-id>"
+#
+# [vars]
+# ALLOWED_ORIGINS = "https://notionpeek.example.com,http://localhost:3000"
+# ALLOW_LOCAL_ORIGINS = "false"
+# REQUIRE_APP_REFERER = "true"
