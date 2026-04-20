@@ -110,3 +110,7 @@ Error codes: `invalid_url`, `missing_url`, `private_or_missing`, `no_collaborato
 ## Credits
 
 Inspired by [this tweet from @weezerOSINT](https://x.com/weezerOSINT/status/2045849358462222720). Built by [gpt.alex](https://x.com/gpt_alex).
+
+## Disclaimer
+
+Notion is a registered trademark of Notion Labs, Inc. NotionPeek is an independent project and is not affiliated with, endorsed by, or sponsored by Notion Labs. The tool only reads data that Notion's own public page endpoint already returns to any browser that loads a public page.

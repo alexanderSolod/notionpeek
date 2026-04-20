@@ -228,14 +228,20 @@ export function App() {
 
       <footer className="footer">
         <div className="footer-inner">
-          <a className="author" href={authorTwitterUrl} target="_blank" rel="noreferrer">
-            Made by <strong>gpt.alex</strong>
-            <ExternalIcon />
-          </a>
-          <a className="repo-link" href={repoUrl} target="_blank" rel="noreferrer">
-            <GithubIcon />
-            <span>Source on GitHub</span>
-          </a>
+          <div className="footer-links">
+            <a className="author" href={authorTwitterUrl} target="_blank" rel="noreferrer">
+              Made by <strong>gpt.alex</strong>
+              <ExternalIcon />
+            </a>
+            <a className="repo-link" href={repoUrl} target="_blank" rel="noreferrer">
+              <GithubIcon />
+              <span>Source on GitHub</span>
+            </a>
+          </div>
+          <p className="disclaimer">
+            Notion is a registered trademark of Notion Labs, Inc. NotionPeek is an independent
+            project and is not affiliated with, endorsed by, or sponsored by Notion Labs.
+          </p>
         </div>
       </footer>
 
